@@ -1,0 +1,9 @@
+"AddonInfo"
+{
+        "name"        "LuaChip"
+        "version"     "0.1"
+        "author_name" "MetaMan"
+        "author_url"  "http://danielga.bitbucket.org/luachip"
+        "info"        "Allows players to script in Lua and run it on the server."
+        "override"    "0"
+}
