@@ -3,21 +3,9 @@ AddCSLuaFile("cl_init.lua")
 
 include("shared.lua")
 
-local defaultmaxtime = 1000 -- in microseconds, default may need adjusting
-local maxtime = defaultmaxtime
-CreateConVar("luachip_maxtime", maxtime)
-cvars.AddChangeCallback("luachip_maxtime", function(name, old, new)
-	maxtime = tonumber(new)
-	if maxtime then
-		maxtime = maxtime / 1000000
-	else
-		maxtime = defaultmaxtime
-	end
-end)
-
-local defaultmaxops = 100 -- number of ops to execute before checking chip
+local defaultmaxops = 100
 local maxops = defaultmaxops
-CreateConVar("luachip_maxops", maxops)
+CreateConVar("luachip_maxops", defaultmaxops, FCVAR_ARCHIVE, "Number of Lua ops to execute before checking a LuaChip's execution time.")
 cvars.AddChangeCallback("luachip_maxops", function(name, old, new)
 	maxops = tonumber(new)
 	if not maxops then
@@ -48,7 +36,9 @@ function ENT:Initialize()
 	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetSolid(SOLID_VPHYSICS)
 	self:SetColor(Color(255, 0, 0, 255))
-	self.RunStart = 0
+
+	self.ExecutionStart = 0
+	self.ExecutionTime = 0
 	self.BeingRemoved = false
 end
 
@@ -89,17 +79,24 @@ function ENT:SetCode(code)
 			error("LuaChip was removed, stopping coroutine", 3)
 		end
 
-		ent.TimeSpent = ent.TimeSpent + time - ent.RunStart
-		if ent.TimeSpent >= maxtime then
+		ent.ExecutionTime = ent.ExecutionTime + time - ent.ExecutionStart
+		if ent.ExecutionTime >= ent.MaxExecutionTime then
 			print("debug hook", co, "is ded")
 			debug.sethook(co)
 			error("LuaChip has spent more time than allowed", 3)
 		end
 
-		ent.RunStart = SysTime()
+		ent.ExecutionStart = SysTime()
 	end
 
-	return coroutine.resume(self.Coroutine, self, setfenv(res, self.Environment))
+	local env = table.Copy(self.Environment)
+	env.GetMaxExecutionTime = function()
+		return ent.MaxExecutionTime
+	end
+	env.GetExecutionTime = function()
+		return ent.ExecutionTime
+	end
+	return coroutine.resume(self.Coroutine, self, setfenv(res, env))
 end
 
 function ENT:GetCode()
@@ -113,10 +110,10 @@ end
 function ENT:Think()
 	if self.Coroutine then
 		debug.sethook(self.Coroutine, self.DebugHook, "", not self.BeingRemoved and maxops or 1)
-		self.RunStart = SysTime()
-		self.TimeSpent = 0
+		self.ExecutionStart = SysTime()
+		self.ExecutionTime = 0
 		local res, good, err = coroutine.resume(self.Coroutine)
-		self:SetTimeSpent(self.TimeSpent * 1000000)
+		self:SetExecutionTime(self.ExecutionTime * 1000000)
 		debug.sethook(self.Coroutine)
 
 		if good ~= nil then
@@ -126,6 +123,7 @@ function ENT:Think()
 				print(err)
 			end
 
+			self:SetExecutionTime(0)
 			self.Coroutine = nil
 			return
 		end
@@ -135,6 +133,7 @@ function ENT:Think()
 			return true
 		else
 			print("LuaChip coroutine ended")
+			self:SetExecutionTime(0)
 			self.Coroutine = nil
 		end
 	end
