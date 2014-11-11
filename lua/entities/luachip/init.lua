@@ -94,7 +94,7 @@ function ENT:SetCode(code)
 		return ent.MaxExecutionTime
 	end
 	env.GetExecutionTime = function()
-		return ent.ExecutionTime
+		return ent.ExecutionTime + SysTime() - ent.ExecutionStart
 	end
 	return coroutine.resume(self.Coroutine, self, setfenv(res, env))
 end

@@ -1,5 +1,6 @@
 include("shared.lua")
 
+local fmt = "LuaChip\nOwner: %s\nTime spent: %i/%i μs"
 local white = Color(255, 255, 255, 255)
 function ENT:Think()
 	if self:BeingLookedAtByLocalPlayer() then
@@ -9,7 +10,7 @@ function ENT:Think()
 			nick = owner:Nick()
 		end
 
-		AddWorldTip(self:EntIndex(), "Owner: " .. nick .. "\nTime spent: " .. self:GetExecutionTime(0) .. "/" .. self.MaxExecutionTimeInt .. " μs", 0.5, self:GetPos(), self)
+		AddWorldTip(self:EntIndex(), fmt:format(nick, self:GetExecutionTime(0), self.MaxExecutionTimeInt), 0.5, self:GetPos(), self)
 		halo.Add({self}, white, 1, 1, 1, true, true)
 	end
 end
