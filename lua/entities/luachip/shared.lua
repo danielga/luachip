@@ -26,4 +26,5 @@ end)
 function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 0, "Player")
 	self:NetworkVar("Int", 0, "ExecutionTime")
+	self:NetworkVar("Bool", 0, "Errored")
 end

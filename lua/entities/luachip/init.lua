@@ -53,6 +53,7 @@ function ENT:SetCode(code)
 		return false
 	end
 
+	self:SetErrored(false)
 	self:SetColor(Color(255, 255, 255, 255))
 
 	self.Code = code
@@ -113,25 +114,30 @@ function ENT:Think()
 		self.ExecutionStart = SysTime()
 		self.ExecutionTime = 0
 		local res, good, err = coroutine.resume(self.Coroutine)
-		self:SetExecutionTime(self.ExecutionTime * 1000000)
 		debug.sethook(self.Coroutine)
 
 		if good ~= nil then
 			if good == true then
 				print("LuaChip finished successfully")
+				self:SetExecutionTime(0)
 			elseif good == false then
 				print(err)
+				self:SetExecutionTime(self.ExecutionTime * 1000000)
+				self:SetErrored(true)
+				self:SetColor(Color(255, 0, 0, 255))
 			end
 
-			self:SetExecutionTime(0)
 			self.Coroutine = nil
 			return
 		end
 
 		if res then
+			self:SetExecutionTime(self.ExecutionTime * 1000000)
 			self:NextThink(CurTime() + 1 / 33)
 			return true
 		else
+			-- reminder
+			-- is this code needed? i don't think so
 			print("LuaChip coroutine ended")
 			self:SetExecutionTime(0)
 			self.Coroutine = nil
