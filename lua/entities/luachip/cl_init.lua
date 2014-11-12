@@ -1,7 +1,8 @@
+include("core/client.lua")
 include("shared.lua")
 
 local fmt = "LuaChip\nOwner: %s\nTime spent: %i/%i μs"
-local fmterr = "LuaChip\nOwner: %s\nErrored"
+local fmterr = "LuaChip\nOwner: %s\nTime spent: %i/%i μs\nErrored"
 local white = Color(255, 255, 255, 255)
 function ENT:Think()
 	if self:BeingLookedAtByLocalPlayer() then
@@ -11,12 +12,12 @@ function ENT:Think()
 			nick = owner:Nick()
 		end
 
+		local fmt = fmt
 		if self:GetErrored() then
-			AddWorldTip(self:EntIndex(), fmterr:format(nick), 0.5, self:GetPos(), self)
-		else
-			AddWorldTip(self:EntIndex(), fmt:format(nick, self:GetExecutionTime(0), self.MaxExecutionTimeInt), 0.5, self:GetPos(), self)
+			fmt = fmterr
 		end
 
+		AddWorldTip(self:EntIndex(), fmt:format(nick, self:GetExecutionTime(), luachip.MaxExecutionTimeInt), 0.5, self:GetPos(), self)
 		halo.Add({self}, white, 1, 1, 1, true, true)
 	end
 end
