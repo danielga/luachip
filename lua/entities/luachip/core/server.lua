@@ -113,7 +113,7 @@ function luachip.CreateExecutor(name, code)
 		total = 0
 		start = SysTime()
 		local res, good, err = coroutine.resume(co)
-		total = (total + time - start) * 1000000
+		total = (total + SysTime() - start) * 1000000
 		debug.sethook(co)
 
 		if good == true then
