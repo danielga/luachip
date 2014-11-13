@@ -67,6 +67,7 @@ function luachip.CreateExecutor(name, code)
 		return nil, res
 	end
 
+	local gettime = os.clock
 	local luachip = luachip
 	local start = 0
 	local total = 0
@@ -78,7 +79,7 @@ function luachip.CreateExecutor(name, code)
 	end
 
 	env.GetExecutionTime = function()
-		return total + SysTime() - start
+		return total + gettime() - start
 	end
 
 	local func = setfenv(res, env)
@@ -87,7 +88,7 @@ function luachip.CreateExecutor(name, code)
 	end)
 
 	local function debug_hook()
-		local time = SysTime()
+		local time = gettime()
 
 		if coroutine.running() ~= co then
 			return
@@ -104,16 +105,16 @@ function luachip.CreateExecutor(name, code)
 			error("execution spent more time than allowed")
 		end
 
-		start = SysTime()
+		start = gettime()
 	end
 
 	return function(kill)
 		debug.sethook(co, debug_hook, "", not kill and luachip.MaxOps or 1)
 		die = kill
 		total = 0
-		start = SysTime()
+		start = gettime()
 		local res, good, err = coroutine.resume(co)
-		total = (total + SysTime() - start) * 1000000
+		total = (total + gettime() - start) * 1000000
 		debug.sethook(co)
 
 		if good == true then
