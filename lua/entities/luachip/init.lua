@@ -13,14 +13,12 @@ end
 
 function ENT:SetCode(code)
 	if self.Executor then
-		local _, _, _, err = self.Executor("kill")
-		print(err)
+		self.Executor("kill")
 		self.Executor = nil
 	end
 
 	local func, err = luachip.CreateExecutor(self, code)
 	if not func then
-		print(err)
 		self:SetState(self.ERRORED)
 		self:SetColor(Color(255, 0, 0, 255))
 		return false
@@ -41,7 +39,7 @@ end
 
 function ENT:Reset()
 	if self.Executor then
-		print(self.Executor("reset"))
+		self.Executor("reset")
 		self:SetState(self.RUNNING)
 		self:SetColor(Color(255, 255, 255, 255))
 	elseif self.Code then
@@ -61,21 +59,17 @@ function ENT:Think()
 				self:SetExecutionTime(0)
 				self:SetState(self.FINISHED)
 			else
-				print(err)
 				self:SetExecutionTime(time)
 				self:SetState(self.ERRORED)
 				self:SetColor(Color(255, 0, 0, 255))
 			end
-
-			--self.Executor = nil
 		end
 	end
 end
 
 function ENT:OnRemove()
 	if self.Executor and self:GetState() == self.RUNNING then
-		local _, _, _, err = self.Executor("kill")
-		print(err)
+		self.Executor("kill")
 		self.Executor = nil
 	end
 end

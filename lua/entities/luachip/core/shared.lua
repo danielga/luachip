@@ -192,7 +192,7 @@ function luachip.CreateExecutor(chip, code)
 		BypassTiming = function(bypass)
 			if bypass then
 				env.Bypassing = true
-				env.TimeTotal = env.TimeTotal + time - env.TimeStart
+				env.TimeTotal = env.TimeTotal + luachip_GetTime() - env.TimeStart
 			else
 				env.TimeStart = luachip_GetTime()
 				env.Bypassing = false
@@ -213,7 +213,7 @@ function luachip.CreateExecutor(chip, code)
 			env.TimeTotal = env.TimeTotal + time - env.TimeStart
 			if env.TimeTotal >= MaxExecutionTime then
 				debug_sethook(co)
-				print(debug.traceback())
+				file.Append("luachip.txt", debug.traceback(co, "execution spent more time than allowed", 2) .. "\n\n")
 				error("execution spent more time than allowed")
 			end
 

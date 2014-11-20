@@ -41,6 +41,10 @@ end
 function ENTITY:__gc()
 end
 
+function ENTITY:GetPos()
+	return GetEntity(self):GetPos()
+end
+
 function ENTITY:SetPos(vec)
 	local ent = CheckEntity(self)
 	if ent then

@@ -12,7 +12,6 @@ luachip.AddFunction("assert", assert)
 
 luachip.AddFunction("error", error)
 
-local luachip_GetTime = luachip.GetTime
 luachip.AddFunction("yield", function()
 	ENV.BypassTiming(true)
 	coroutine.yield()
