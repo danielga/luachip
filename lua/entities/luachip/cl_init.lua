@@ -2,6 +2,7 @@ include("core/client.lua")
 include("shared.lua")
 
 local fmt = "LuaChip\nOwner: %s\nTime spent: %i/%i μs"
+local fmtfin = "LuaChip\nOwner: %s\nTime spent: %i/%i μs\nFinished"
 local fmterr = "LuaChip\nOwner: %s\nTime spent: %i/%i μs\nErrored"
 local white = Color(255, 255, 255, 255)
 function ENT:Think()
@@ -12,8 +13,11 @@ function ENT:Think()
 			nick = owner:Nick()
 		end
 
+		local state = self:GetState()
 		local fmt = fmt
-		if self:GetErrored() then
+		if state == self.FINISHED then
+			fmt = fmtfin
+		elseif state == self.ERRORED then
 			fmt = fmterr
 		end
 

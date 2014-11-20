@@ -8,7 +8,7 @@ function luachip.SendCode(entoridx)
 	if type(chip) ~= "number" then
 		-- you can try bypassing this check but this is for your
 		-- own good, the server also checks if you're owner
-		local owns, msg = luachip.IsOwner(chip, LocalPlayer())
+		local owns, msg = luachip.IsOwner(LocalPlayer(), chip)
 		if owns then
 			chip = chip:EntIndex()
 		else
@@ -16,21 +16,20 @@ function luachip.SendCode(entoridx)
 		end
 	end
 
-	net.Start("luachip_sendcode")
-	net.WriteUInt(entoridx, 16)
-
+	local code
 	if IsValid(chatgui) and IsValid(chatgui.Lua) and IsValid(chatgui.Lua.code) then
-		local code = chatgui.Lua.code:GetCode()
-		if #code == 0 then
-			net.WriteBit(false)
-		else
-			net.WriteBit(true)
-			net.WriteString(chatgui.Lua.code:GetCode())
-		end
-	else
-		net.WriteBit(false)
+		code = util.Compress(chatgui.Lua.code:GetCode())
 	end
 
+	local codelen = code and #code or 0
+	if codelen == 0 then
+		return false, "zero_length"
+	end
+
+	net.Start("luachip_sendcode")
+	net.WriteUInt(chip, 16)
+	net.WriteUInt(codelen, 32)
+	net.WriteData(code, codelen)
 	net.SendToServer()
 	return true
 end
@@ -45,7 +44,7 @@ function luachip.OpenEditor(code) -- Metastruct's chatbox Lua tab
 		return true
 	end
 
-	return false
+	return false, "no_editor"
 end
 
 net.Receive("luachip_requestcode", function(len)
@@ -54,7 +53,7 @@ end)
 
 net.Receive("luachip_sendcode", function(len)
 	local chip = net.ReadEntity()
-	luachip.OpenEditor(net.ReadString())
+	luachip.OpenEditor(util.Decompress(net.ReadData(net.ReadUInt(32))))
 end)
 
 net.Receive("luachip_openeditor", function(len)

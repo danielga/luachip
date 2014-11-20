@@ -8,8 +8,13 @@ ENT.RenderGroup	= RENDERGROUP_OPAQUE
 ENT.Spawnable = false
 ENT.AdminSpawnable = false
 
+ENT.NONE = 0
+ENT.RUNNING = 1
+ENT.FINISHED = 2
+ENT.ERRORED = 3
+
 function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 0, "Player")
 	self:NetworkVar("Int", 0, "ExecutionTime")
-	self:NetworkVar("Bool", 0, "Errored")
+	self:NetworkVar("Int", 1, "State")
 end

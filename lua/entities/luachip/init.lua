@@ -12,23 +12,21 @@ function ENT:Initialize()
 end
 
 function ENT:SetCode(code)
-	local owner = self:GetPlayer()
-	assert(IsValid(owner) and owner:IsPlayer(), "invalid LuaChip owner")
-
 	if self.Executor then
-		self.Executor(true)
+		local _, _, _, err = self.Executor("kill")
+		print(err)
 		self.Executor = nil
 	end
 
-	local func, err = luachip.CreateExecutor("LuaChip|" .. owner:SteamID() .. "|" .. owner:GetName(), code)
+	local func, err = luachip.CreateExecutor(self, code)
 	if not func then
 		print(err)
-		self:SetErrored(true)
+		self:SetState(self.ERRORED)
 		self:SetColor(Color(255, 0, 0, 255))
 		return false
 	end
 
-	self:SetErrored(false)
+	self:SetState(self.RUNNING)
 	self:SetColor(Color(255, 255, 255, 255))
 
 	self.Code = code
@@ -42,11 +40,17 @@ function ENT:GetCode()
 end
 
 function ENT:Reset()
-	self:SetCode(self:GetCode())
+	if self.Executor then
+		print(self.Executor("reset"))
+		self:SetState(self.RUNNING)
+		self:SetColor(Color(255, 255, 255, 255))
+	elseif self.Code then
+		self:SetCode(self.Code)
+	end
 end
 
 function ENT:Think()
-	if self.Executor then
+	if self.Executor and self:GetState() == self.RUNNING then
 		local alive, success, time, err = self.Executor()
 		if alive then
 			self:SetExecutionTime(time)
@@ -55,21 +59,23 @@ function ENT:Think()
 		else
 			if success then
 				self:SetExecutionTime(0)
+				self:SetState(self.FINISHED)
 			else
 				print(err)
 				self:SetExecutionTime(time)
-				self:SetErrored(true)
+				self:SetState(self.ERRORED)
 				self:SetColor(Color(255, 0, 0, 255))
 			end
 
-			self.Executor = nil
+			--self.Executor = nil
 		end
 	end
 end
 
 function ENT:OnRemove()
-	if self.Executor then
-		print(self.Executor(true))
+	if self.Executor and self:GetState() == self.RUNNING then
+		local _, _, _, err = self.Executor("kill")
+		print(err)
 		self.Executor = nil
 	end
 end

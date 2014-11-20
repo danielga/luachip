@@ -19,11 +19,13 @@ if SERVER then
 			return false
 		end
 
-		if not util.IsValidPhysicsObject(trace.Entity, trace.PhysicsBone) then
+		local ent = trace.Entity
+		local bone = trace.PhysicsBone
+		if not util.IsValidPhysicsObject(ent, bone) then
 			return false
 		end
 
-		if luachip.RequestCode(owner, trace.Entity) then
+		if luachip.RequestCode(owner, ent) then
 			return true
 		end
 
@@ -41,17 +43,20 @@ if SERVER then
 			model = self.DefaultModel
 		end
 
+		local pos = trace.HitPos
+		local normal = trace.HitNormal
+
 		entity:SetModel(model)
-		local ang = trace.HitNormal:Angle()
+		local ang = normal:Angle()
 		ang.pitch = ang.pitch + 90
 		entity:SetAngles(ang)
-		entity:SetPos(trace.HitPos)
+		entity:SetPos(pos)
 		entity:SetPlayer(owner)
 		entity:Spawn()
 
-		entity:SetPos(trace.HitPos - trace.HitNormal * entity:OBBMins().z)
+		entity:SetPos(pos - normal * entity:OBBMins().z)
 
-		local weld = constraint.Weld(entity, trace.Entity, 0, trace.PhysicsBone, 0, true, false)
+		local weld = constraint.Weld(entity, ent, 0, bone, 0, true, false)
 		undo.Create("luachip")
 			undo.AddEntity(entity)
 			undo.AddEntity(weld)
@@ -83,7 +88,9 @@ if SERVER then
 			return false
 		end
 
-		if luachip.Reset(owner, trace.Entity) then
+		local ent = trace.Entity
+		if IsValid(ent) and ent:GetClass() == "luachip" and luachip.IsOwner(owner, ent) then
+			ent:Reset()
 			return true
 		end
 
