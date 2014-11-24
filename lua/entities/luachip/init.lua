@@ -59,6 +59,7 @@ function ENT:Think()
 				self:SetExecutionTime(0)
 				self:SetState(self.FINISHED)
 			else
+				print(err)
 				self:SetExecutionTime(time)
 				self:SetState(self.ERRORED)
 				self:SetColor(Color(255, 0, 0, 255))

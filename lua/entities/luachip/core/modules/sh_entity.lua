@@ -1,10 +1,19 @@
-local ENV
+local ENV, luachip_Vector, luachip_Angle
+local luachip_IsOwner, luachip_GetTime, luachip_GetFunction = luachip.IsOwner, luachip.GetTime, luachip.GetFunction
+local getmetatable, debug_getfenv = getmetatable, debug.getfenv
+local ent_index = "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
+
 luachip.Hook("SetupEnvironment", function(env)
 	ENV = env
-end)
 
-local ent_index = "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
-local luachip_IsOwner, luachip_GetTime, getmetatable, debug_getfenv = luachip.IsOwner, luachip.GetTime, getmetatable, debug.getfenv
+	if not luachip_Vector then
+		luachip_Vector = luachip.Vector
+	end
+
+	if not luachip_Angle then
+		luachip_Angle = luachip.Angle
+	end
+end)
 
 local function GetEntity(self)
 	return debug_getfenv(self)[ent_index]
@@ -42,13 +51,16 @@ function ENTITY:__gc()
 end
 
 function ENTITY:GetPos()
-	return GetEntity(self):GetPos()
+	ENV.CheckTime()
+	local vec = GetEntity(self):GetPos()
+	return luachip_Vector(vec[1], vec[2], vec[3])
 end
 
 function ENTITY:SetPos(vec)
+	ENV.CheckTime()
 	local ent = CheckEntity(self)
 	if ent then
-		ent:SetPos(vec)
+		ent:SetPos(vec:ToLua())
 	end
 end
 

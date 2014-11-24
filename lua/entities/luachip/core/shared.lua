@@ -153,8 +153,25 @@ function luachip.Call(name, ...)
 	end
 end
 
-local IsValid, CompileString, type = IsValid, CompileString, type
-local setfenv, error, debug_sethook = setfenv, error, debug.sethook
+local debug_getinfo = debug.getinfo
+local function insidec()
+	local i = 3
+	local info = debug_getinfo(i)
+	repeat
+		print(info.short_src)
+		if info.short_src == "[C]" then
+			return true
+		end
+
+		i = i + 1
+		info = debug_getinfo(i)
+	until not info
+
+	return false
+end
+
+local IsValid, CompileString, file_Append, type = IsValid, CompileString, file.Append, type
+local setfenv, error, debug_sethook, debug_traceback = setfenv, error, debug.sethook, debug.traceback
 local luachip_GetTime, luachip_Call, luachip_Environment = luachip.GetTime, luachip.Call, luachip.Environment
 local coroutine_create, coroutine_resume, coroutine_running, coroutine_status = coroutine.create, coroutine.resume, coroutine.running, coroutine.status
 function luachip.CreateExecutor(chip, code)
@@ -188,6 +205,18 @@ function luachip.CreateExecutor(chip, code)
 		Owner = owner,
 		Coroutine = co,
 		Function = func,
+		TimeStart = 0,
+		TimeTotal = 0,
+		ShouldDie = false,
+		ShouldYield = false,
+		CheckTime = function()
+			env.BypassTiming(true)
+			if env.TimeTotal >= MaxExecutionTime then
+				--print("CheckTime")
+				coroutine.yield()
+			end
+			env.BypassTiming(false)
+		end,
 		Bypassing = true,
 		BypassTiming = function(bypass)
 			if bypass then
@@ -212,9 +241,15 @@ function luachip.CreateExecutor(chip, code)
 
 			env.TimeTotal = env.TimeTotal + time - env.TimeStart
 			if env.TimeTotal >= MaxExecutionTime then
-				debug_sethook(co)
-				file.Append("luachip.txt", debug.traceback(co, "execution spent more time than allowed", 2) .. "\n\n")
-				error("execution spent more time than allowed")
+				env.ShouldYield = true
+			elseif env.TimeTotal >= MaxExecutionTime + MaxExecutionTime then
+				if insidec() then
+					debug_sethook(co, env.DebugHook, "", 50)
+				else
+					debug_sethook(co)
+					file_Append("luachip.txt", debug_traceback(co, "execution spent more time than allowed", 2) .. "\n\n")
+					error("execution spent more time than allowed")
+				end
 			end
 
 			env.TimeStart = luachip_GetTime()
@@ -228,7 +263,7 @@ function luachip.CreateExecutor(chip, code)
 
 		env.ShouldDie = kill
 		env.TimeTotal = 0
-		env.TimeStart = nil
+		env.TimeStart = 0
 
 		luachip_Call("SetupEnvironment", env)
 
@@ -255,7 +290,11 @@ function luachip.CreateExecutor(chip, code)
 end
 
 function luachip.AddFunction(name, func)
-	luachip.Environment[name] = func
+	luachip_Environment[name] = func
+end
+
+function luachip.GetFunction(name)
+	return luachip_Environment[name]
 end
 
 local files = file.Find("entities/luachip/core/modules/*.lua", "LUA")
