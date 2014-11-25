@@ -22,6 +22,11 @@ function ENT:Think()
 		end
 
 		AddWorldTip(self:EntIndex(), fmt:format(nick, self:GetExecutionTime(), luachip.MaxExecutionTimeInt), 0.5, self:GetPos(), self)
-		halo.Add({self}, white, 1, 1, 1, true, true)
+
+		if not self.HaloEnts then
+			self.HaloEnts = {self}
+		end
+
+		halo.Add(HaloEnts, white, 1, 1, 1, true, true)
 	end
 end
