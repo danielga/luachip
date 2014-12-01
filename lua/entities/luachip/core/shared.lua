@@ -158,7 +158,6 @@ local function insidec()
 	local i = 3
 	local info = debug_getinfo(i)
 	repeat
-		print(info.short_src)
 		if info.short_src == "[C]" then
 			return true
 		end
@@ -171,9 +170,10 @@ local function insidec()
 end
 
 local IsValid, CompileString, file_Append, type = IsValid, CompileString, file.Append, type
-local setfenv, error, debug_sethook, debug_traceback = setfenv, error, debug.sethook, debug.traceback
+local setfenv, error, debug_gethook, debug_sethook, debug_traceback = setfenv, error, debug.gethook, debug.sethook, debug.traceback
 local luachip_GetTime, luachip_Call, luachip_Environment = luachip.GetTime, luachip.Call, luachip.Environment
-local coroutine_create, coroutine_resume, coroutine_running, coroutine_status = coroutine.create, coroutine.resume, coroutine.running, coroutine.status
+local coroutine_create, coroutine_resume, coroutine_running = coroutine.create, coroutine.resume, coroutine.running
+local coroutine_yield, coroutine_status = coroutine.yield, coroutine.status
 function luachip.CreateExecutor(chip, code)
 	if not IsValid(chip) or chip:GetClass() ~= "luachip" then
 		return nil, "not_luachip"
@@ -196,9 +196,9 @@ function luachip.CreateExecutor(chip, code)
 	local env
 	local func = setfenv(res, luachip_Environment)
 	local co = coroutine_create(function()
-		env.BypassTiming(false)
+		env.TimeStart = luachip_GetTime()
 		func()
-		env.BypassTiming(true)
+		env.TimeTotal = luachip_GetTime() - env.TimeStart
 	end)
 	env = {
 		Entity = chip,
@@ -210,49 +210,32 @@ function luachip.CreateExecutor(chip, code)
 		ShouldDie = false,
 		ShouldYield = false,
 		CheckTime = function()
-			env.BypassTiming(true)
-			if env.TimeTotal >= MaxExecutionTime then
-				--print("CheckTime")
-				coroutine.yield()
-			end
-			env.BypassTiming(false)
-		end,
-		Bypassing = true,
-		BypassTiming = function(bypass)
-			if bypass then
-				env.Bypassing = true
-				env.TimeTotal = env.TimeTotal + luachip_GetTime() - env.TimeStart
-			else
+			local t = luachip_GetTime() - env.TimeStart
+			if t >= MaxExecutionTime then
+				env.TimeTotal = t
+				coroutine_yield()
 				env.TimeStart = luachip_GetTime()
-				env.Bypassing = false
 			end
 		end,
 		DebugHook = function(event, line)
 			local time = luachip_GetTime()
 
-			if env.Bypassing or coroutine_running() ~= co then
+			if coroutine_running() ~= co then
 				return
 			end
 
 			if env.ShouldDie then
-				debug_sethook(co)
+				env.TimeTotal = time - env.TimeStart
 				error("coroutine kill requested")
 			end
 
-			env.TimeTotal = env.TimeTotal + time - env.TimeStart
-			if env.TimeTotal >= MaxExecutionTime then
+			if time - env.TimeStart >= MaxExecutionTime * 2 then
+				env.TimeTotal = time - env.TimeStart
+				file_Append("luachip.txt", debug_traceback(co, "execution spent more time than allowed", 2) .. "\n\n")
+				error("execution spent more time than allowed")
+			elseif time - env.TimeStart >= MaxExecutionTime then
 				env.ShouldYield = true
-			elseif env.TimeTotal >= MaxExecutionTime + MaxExecutionTime then
-				if insidec() then
-					debug_sethook(co, env.DebugHook, "", 50)
-				else
-					debug_sethook(co)
-					file_Append("luachip.txt", debug_traceback(co, "execution spent more time than allowed", 2) .. "\n\n")
-					error("execution spent more time than allowed")
-				end
 			end
-
-			env.TimeStart = luachip_GetTime()
 		end
 	}
 
@@ -267,9 +250,10 @@ function luachip.CreateExecutor(chip, code)
 
 		luachip_Call("SetupEnvironment", env)
 
+		local f, m, c = debug_gethook(co)
 		debug_sethook(co, debughook, "", not kill and MaxOps or 1)
 		local res, data = coroutine_resume(co)
-		debug_sethook(co)
+		debug_sethook(co, f, m, c)
 
 		luachip_Call("FinishEnvironment", env)
 

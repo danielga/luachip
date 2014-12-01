@@ -51,16 +51,26 @@ function ENTITY:__gc()
 end
 
 function ENTITY:GetPos()
-	ENV.CheckTime()
+	--ENV.CheckTime()
 	local vec = GetEntity(self):GetPos()
 	return luachip_Vector(vec[1], vec[2], vec[3])
 end
 
 function ENTITY:SetPos(vec)
-	ENV.CheckTime()
-	local ent = CheckEntity(self)
+	--ENV.CheckTime()
+	--local ent = CheckEntity(self)
+	local ent = GetEntity(self)
 	if ent then
 		ent:SetPos(vec:ToLua())
+	end
+end
+
+function ENTITY:Kill()
+	--ENV.CheckTime()
+	--local ent = CheckEntity(self)
+	local ent = GetEntity(self)
+	if ent then
+		ent:Kill()
 	end
 end
 

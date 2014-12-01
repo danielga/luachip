@@ -12,16 +12,15 @@ luachip.AddFunction("assert", assert)
 
 luachip.AddFunction("error", error)
 
+local luachip_GetTime, coroutine_yield = luachip.GetTime, coroutine.yield
 luachip.AddFunction("yield", function()
-	ENV.BypassTiming(true)
-	coroutine.yield()
-	ENV.BypassTiming(false)
+	ENV.TimeTotal = luachip_GetTime() - ENV.TimeStart
+	coroutine_yield()
+	ENV.TimeStart = luachip_GetTime()
 end)
 
 luachip.AddFunction("GetExecutionTime", function()
-	ENV.BypassTiming(true)
-	ENV.BypassTiming(false)
-	return ENV.TimeTotal
+	return luachip_GetTime() - ENV.TimeStart
 end)
 
 luachip.AddFunction("GetMaxExecutionTime", function()
