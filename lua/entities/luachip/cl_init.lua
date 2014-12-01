@@ -27,6 +27,6 @@ function ENT:Think()
 			self.HaloEnts = {self}
 		end
 
-		halo.Add(HaloEnts, white, 1, 1, 1, true, true)
+		halo.Add(self.HaloEnts, white, 1, 1, 1, true, true)
 	end
 end
