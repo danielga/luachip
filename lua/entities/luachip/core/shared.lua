@@ -1,5 +1,5 @@
 luachip = {
-	GetTime = system.IsWindows() and SysTime or os.clock,
+	GetTime = SysTime,
 	Hooks = {},
 	Environment = {},
 	MaxExecutionTimeInt = 1000,
@@ -230,9 +230,11 @@ function luachip.CreateExecutor(chip, code)
 			end
 
 			if time - env.TimeStart >= MaxExecutionTime * 2 then
-				env.TimeTotal = time - env.TimeStart
-				file_Append("luachip.txt", debug_traceback(co, "execution spent more time than allowed", 2) .. "\n\n")
-				error("execution spent more time than allowed")
+				if not insidec() then
+					env.TimeTotal = time - env.TimeStart
+					file_Append("luachip.txt", debug_traceback(co, "execution spent more time than allowed", 2) .. "\n\n")
+					error("execution spent more time than allowed")
+				end
 			elseif time - env.TimeStart >= MaxExecutionTime then
 				env.ShouldYield = true
 			end
